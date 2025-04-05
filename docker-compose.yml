@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Servicio 1: Nginx (Servidor web)
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80" # Expone el puerto 80 de Nginx en el puerto 8080 del host
+    volumes:
+      - ./web:/usr/share/nginx/html # Monta tu código fuente HTML/PHP en la carpeta de Nginx
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf # Monta tu archivo personalizado de configuración Nginx
+    depends_on:
+      - php # Espera a que el contenedor PHP esté listo
+
+  # Servicio 2: PHP-FPM (Procesador PHP)
+  php:
+    build:
+      context: . # Usa la carpeta actual
+      dockerfile: Dockerfile # Construye usando este archivo Dockerfile
+    volumes:
+      - ./web:/usr/share/nginx/html # Comparte los mismos archivos con Nginx
+    depends_on:
+      - db # Espera a que la base de datos esté lista antes de arrancar
+
+  # Servicio 3: MySQL (Base de datos)
+  db:
+    image: mysql:5.7 # Usa la imagen oficial de MySQL versión 5.7
+    restart: always # Reinicia automáticamente si se cae
+    environment:
+      MYSQL_ROOT_PASSWORD: root # Contraseña del usuario root
+      MYSQL_DATABASE: reloj_db # Nombre de la base que se va a crear automáticamente
+      MYSQL_USER: user # Usuario adicional
+      MYSQL_PASSWORD: password # Contraseña del usuario adicional
+    ports:
+      - "3306:3306" # Expone MySQL al puerto 3306 del host
+    volumes:
+      - db_data:/var/lib/mysql # Guarda los datos en un volumen para persistencia
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql # Script SQL para inicializar la base de datos
+
+# Volúmenes para persistencia
+volumes:
+  db_data:
